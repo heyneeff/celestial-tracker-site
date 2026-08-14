@@ -291,10 +291,10 @@
      instead) so the chrome doesn't pop in before the console has finished
      resizing. */
   .console{
-    transition:width .8s ease, height .8s ease, padding .8s ease,
-      border-radius .8s ease, box-shadow .8s ease, grid-template-columns .8s ease;
+    transition:width 1s ease, height 1s ease, padding 1s ease,
+      border-radius 1s ease, box-shadow 1s ease, grid-template-columns 1s ease;
   }
-  .rail-col{ transition:opacity .5s ease .2s, visibility 0s linear .2s; }
+  .rail-col{ transition:opacity .625s ease .25s, visibility 0s linear .25s; }
   body.intro-cold-open{ padding:0; overflow:hidden; }
   body.intro-cold-open main{ width:100%; height:100vh; height:100dvh; }
   /* keeps the "rail" named area valid (just collapsed to 0 width) rather than
@@ -314,8 +314,25 @@
   body.intro-cold-open .crt{ height:100%; border-radius:0 }
   /* the persistent buy pill floats outside .console entirely — not part of
      the "no chrome" rule above, needs its own hide/fade */
-  .buy-pill{ transition:opacity .5s ease .2s, visibility 0s linear .2s; }
+  .buy-pill{ transition:opacity .625s ease .25s, visibility 0s linear .25s; }
   body.intro-cold-open .buy-pill{ opacity:0; visibility:hidden; pointer-events:none; transition:none; }
+
+  /* large glowing cold-open title, over the fullscreen warp only — fades/
+     scales in, breathes gently while held, then fades back out before the
+     sky lands on "now" (timed from the JS, see INTRO_TITLE_* constants) */
+  .intro-title{
+    position:fixed; inset:0; z-index:61; display:flex; align-items:center; justify-content:center;
+    text-align:center; pointer-events:none; padding:24px; box-sizing:border-box;
+    font-family:var(--mono); font-weight:800; letter-spacing:.14em; line-height:1.35;
+    font-size:clamp(28px, 6vw, 64px); color:var(--phos2);
+    text-shadow:0 0 24px var(--phos2-glow), 0 0 54px var(--phos2-glow);
+    opacity:0; transform:scale(.9); transition:opacity 1s ease, transform 1s ease;
+  }
+  .intro-title.show{ opacity:1; transform:scale(1); animation:introTitlePulse 2.4s ease-in-out infinite; }
+  @keyframes introTitlePulse{
+    0%,100%{ text-shadow:0 0 24px var(--phos2-glow), 0 0 50px var(--phos2-glow); }
+    50%{ text-shadow:0 0 36px var(--phos2-glow), 0 0 84px var(--phos2-glow); }
+  }
 
   @media(max-width:760px){
     .readout{width:auto; height:55%; bottom:auto}
@@ -997,8 +1014,9 @@
 
   /* one-time first-visit explainer — dismissing sets a localStorage flag so
      it never shows again on this device; returning visitors never see it */
-  .welcome{position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; background:rgba(4,3,8,.86)}
+  .welcome{position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; background:rgba(4,3,8,.86); opacity:0; transition:opacity .7s ease}
   .welcome.on{display:flex}
+  .welcome.on.show{opacity:1}
   .welcome-card{
     max-width:480px; background:var(--screen); border:1px solid var(--phos2-faint); border-radius:12px;
     padding:26px 28px; box-shadow:0 0 40px rgba(0,0,0,.8), 0 0 30px rgba(var(--phos2-rgb),.15) inset;
@@ -1055,9 +1073,17 @@
   .tour.on{display:block}
   .tour-card{
     position:absolute; width:240px; background:var(--screen); border:1px solid var(--phos2-faint); border-radius:10px;
-    padding:14px 16px; box-shadow:0 0 30px rgba(0,0,0,.85), 0 0 24px rgba(var(--phos2-rgb),.2) inset;
+    padding:14px 16px;
+    box-shadow:0 0 30px rgba(0,0,0,.85), 0 0 24px rgba(var(--phos2-rgb),.2) inset, 0 0 26px rgba(var(--phos2-rgb),.3);
     color:var(--phos); font-size:12.5px; line-height:1.5; pointer-events:auto;
+    /* left/top are set directly via JS (positionTourCard) — transitioning them
+       here is what makes the card visibly travel to the next target instead of
+       teleporting; opacity is toggled via .fade-out around each move so the
+       card fades out, slides to the new spot while invisible, then fades back
+       in already in place (see showDemoBeat) */
+    transition:left .5s ease, top .5s ease, opacity .35s ease;
   }
+  .tour-card.fade-out{ opacity:0; }
   .tour-title{font-size:12px; font-weight:800; letter-spacing:.12em; color:var(--phos2); text-shadow:0 0 8px var(--phos2-glow); margin-bottom:6px}
   .tour-text{margin-bottom:10px}
   .tour-nav{display:flex; align-items:center; gap:8px}
@@ -1078,13 +1104,16 @@
   .buy-pill:hover{filter:brightness(1.08)}
   @media (max-width:640px){ .buy-pill{top:auto; bottom:12px; right:12px; font-size:11px; padding:7px 12px} }
   .tour-card.autoplay{width:280px}
-  .tour-autobar{display:none; height:3px; background:rgba(var(--phos2-rgb),.15); border-radius:2px; overflow:hidden; margin-bottom:10px}
+  /* whole-tour cumulative progress bar (not a per-beat countdown — see
+     demoElapsedMs/demoTotalMs in the JS), thickened and glowing to actually
+     read as a progress bar rather than a thin hairline */
+  .tour-autobar{display:none; height:5px; background:rgba(var(--phos2-rgb),.15); border-radius:3px; overflow:hidden; margin-bottom:10px}
   .tour-card.autoplay .tour-autobar{display:block}
-  .tour-autobar-fill{height:100%; width:0%; background:var(--amber)}
+  .tour-autobar-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--amber-dim),var(--amber)); box-shadow:0 0 10px var(--amber), 0 0 4px var(--amber)}
   .tour-arrow{position:absolute; width:12px; height:12px; background:var(--screen); left:calc(50% - 6px); transform:rotate(45deg)}
   .tour-arrow.pos-top{top:-6px; border-top:1px solid var(--phos2-faint); border-left:1px solid var(--phos2-faint)}
   .tour-arrow.pos-bottom{bottom:-6px; border-bottom:1px solid var(--phos2-faint); border-right:1px solid var(--phos2-faint)}
-  .tour-highlight{position:relative; z-index:56; outline:2px solid var(--phos2); box-shadow:0 0 0 5px rgba(var(--phos2-rgb),.35), 0 0 22px rgba(var(--phos2-rgb),.55); border-radius:6px; animation:tourPulse 1.6s ease-in-out infinite}
+  .tour-highlight{position:relative; z-index:56; outline:2px solid var(--phos2); box-shadow:0 0 0 5px rgba(var(--phos2-rgb),.4), 0 0 30px rgba(var(--phos2-rgb),.65); border-radius:6px; animation:tourPulse 1.6s ease-in-out infinite}
   @keyframes tourPulse{ 0%,100%{outline-color:var(--phos2)} 50%{outline-color:var(--phos)} }
 
   @media(max-width:520px){
@@ -1205,6 +1234,8 @@
 </main>
 
 <a id="btnBuyPersistent" class="buy-pill" href="#" target="_blank" rel="noopener">◉ BUY — $199</a>
+
+<div class="intro-title" id="introTitle" aria-hidden="true">WELCOME TO<br>THE CELESTIAL TRACKER</div>
 
 <div class="welcome" id="welcomeOverlay" role="dialog" aria-modal="true" aria-label="Welcome">
   <div class="welcome-card">
@@ -5983,8 +6014,28 @@ function positionTourCard(target){
   const arrowLeft = Math.min(Math.max(14, r.left + r.width/2 - left - 6), cw-20);
   arrow.style.left = arrowLeft+'px';
 }
+// Fades an element in via opacity, working around the fact that "display"
+// itself can't be transitioned — the double rAF forces the browser to commit
+// opacity:0 as its own paint before flipping to 1, so the transition actually
+// has a starting frame to animate from instead of just snapping to the end
+// state (a single rAF is sometimes still batched together with the caller's
+// own synchronous style changes).
+function fadeInEl(el, ms){
+  el.style.transition = 'none';
+  el.style.opacity = '0';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    el.style.transition = `opacity ${ms}ms ease`;
+    el.style.opacity = '1';
+  }));
+  setTimeout(()=>{ el.style.transition=''; el.style.opacity=''; }, ms+80);
+}
 function showOpeningCTAs(){
-  document.getElementById('welcomeOverlay').classList.add('on');
+  const el = document.getElementById('welcomeOverlay');
+  el.classList.add('on');
+  requestAnimationFrame(()=>requestAnimationFrame(()=> el.classList.add('show')));
+}
+function hideOpeningCTAs(){
+  document.getElementById('welcomeOverlay').classList.remove('on','show');
 }
 
 // The cold-open time-warp: races the real sky from a fixed point in the past
@@ -5994,9 +6045,17 @@ function showOpeningCTAs(){
 // then settling," so no separate easing was needed. WARP_BACK is long enough
 // that the fast inner planets (Mercury/Venus/Moon) visibly lap and the outer
 // ones visibly creep; WARP_MS is tuned to read as one continuous sweep
-// rather than a slog.
+// rather than a slog. All the cold-open's own timings (not the rest of the
+// app) are tuned 25% slower than they were originally, to give the whole
+// sequence a calmer, more deliberate pace.
 const COLD_OPEN_WARP_BACK_MS = 1000*60*60*24*30*8; // ~8 months
-const COLD_OPEN_WARP_MS = 4200;
+const COLD_OPEN_WARP_MS = 5250;       // was 4200
+const INTRO_TITLE_DELAY_MS = 500;     // let the fullscreen view settle first
+const INTRO_TITLE_FADE_MS = 900;
+const INTRO_TITLE_HOLD_MS = 2650;     // fully visible for this long before fading back out
+const CHART_FADE_MS = 900;
+const RESIZE_PAUSE_MS = 625;          // was 500
+const CONSOLE_RESIZE_MS = 1000;       // matches the .console CSS transition duration, was 800
 function playColdOpen(){
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
     showView('chart');
@@ -6005,15 +6064,24 @@ function playColdOpen(){
   }
   document.body.classList.add('intro-cold-open');
   displayState = computeState(new Date(Date.now() - COLD_OPEN_WARP_BACK_MS));
+
+  // large glowing title over the fullscreen warp — in, hold, out, timed to
+  // clear before the sky actually lands on "now"
+  const titleEl = document.getElementById('introTitle');
+  setTimeout(()=> titleEl.classList.add('show'), INTRO_TITLE_DELAY_MS);
+  setTimeout(()=> titleEl.classList.remove('show'), INTRO_TITLE_DELAY_MS + INTRO_TITLE_FADE_MS + INTRO_TITLE_HOLD_MS);
+
   goToDate(new Date(), true, COLD_OPEN_WARP_MS, ()=>{
+    els.chartview.style.opacity = '0'; // set before showView flips display:none -> block, so there's something to fade from
     showView('chart'); // same transition the CAST CHART nav button uses
+    setTimeout(()=> fadeInEl(els.chartview, CHART_FADE_MS), 200);
     // a brief beat on the freshly-cast, now-live chart before the console
-    // resizes back down and its chrome fades in around it
+    // resizes back down and its chrome (then the CTA buttons) fade in
     setTimeout(()=>{
       document.body.classList.remove('intro-cold-open');
-      setTimeout(fitCrt, 850); // after the CSS resize transition settles
-      showOpeningCTAs();
-    }, 500);
+      setTimeout(fitCrt, CONSOLE_RESIZE_MS + 60); // after the CSS resize transition settles
+      setTimeout(showOpeningCTAs, CONSOLE_RESIZE_MS + 100);
+    }, 200 + CHART_FADE_MS + RESIZE_PAUSE_MS);
   });
 }
 if(!localStorage.getItem(INTRO_SEEN_KEY)){
@@ -6027,7 +6095,7 @@ if(!localStorage.getItem(INTRO_SEEN_KEY)){
 document.getElementById('btnTakeTour').addEventListener('click', startFullDemo);
 document.getElementById('btnStartExploring').addEventListener('click', ()=>{
   localStorage.setItem(WELCOME_SEEN_KEY, '1');
-  document.getElementById('welcomeOverlay').classList.remove('on');
+  hideOpeningCTAs();
 });
 document.getElementById('btnTourSkip').addEventListener('click', endTour);
 window.addEventListener('resize', ()=>{
@@ -6116,48 +6184,83 @@ const DEMO_STEPS = {
 // shorter than their standalone single-feature walkthroughs above, plus the
 // shared closing/buy beat. Every beat still drives the real feature code
 // (renderProfileView/renderCompare/runSearch) — nothing here is a mockup.
+// Unlike the standalone walkthroughs above (which all park the card on
+// .crt-bezel), each beat here points at the actual nav button it's talking
+// about — the card visibly travels the console as the subject changes, not
+// just the chart underneath it. holdMs values are tuned 25% slower than the
+// standalone demos', for a calmer pace on this first-impression tour.
 DEMO_STEPS.full = [
-  { ...DEMO_STEPS.natal[0], holdMs:3400 },
-  { ...DEMO_STEPS.natal[2], holdMs:3800 },
-  { ...DEMO_STEPS.compare[0], holdMs:3600 },
-  { ...DEMO_STEPS.compare[2], holdMs:3600 },
-  { ...DEMO_STEPS.election[0], holdMs:3400 },
-  { title:'EVERY WINDOW THAT FITS, RANKED BY DATE', text:'A real calendar search, starting today — tap any hit to jump straight to that chart.', holdMs:4000, target:'.crt-bezel',
+  { ...DEMO_STEPS.natal[0], holdMs:4250, target:'#btnNatal' },
+  { ...DEMO_STEPS.natal[2], holdMs:4750, target:'.crt-bezel' },
+  { ...DEMO_STEPS.compare[0], holdMs:4500, target:'#btnCompareDemo' },
+  { ...DEMO_STEPS.compare[2], holdMs:4500, target:'.crt-bezel' },
+  { ...DEMO_STEPS.election[0], holdMs:4250, target:'#btnSearch' },
+  { title:'EVERY WINDOW THAT FITS, RANKED BY DATE', text:'A real calendar search, starting today — tap any hit to jump straight to that chart.', holdMs:5000, target:'.crt-bezel',
     action: ()=>{ runSearch(); } },
-  DEMO_CLOSING_BEAT,
+  { ...DEMO_CLOSING_BEAT, holdMs:5250, target:'#btnExportChart', action:()=>{ showView('chart'); } },
 ];
 function startFullDemo(){ startDemo('full'); } // startDemo already hides welcomeOverlay itself
 
 let demoTimer = null, demoMode = null; // demoActive itself is declared near loadProfiles, above
+let demoElapsedMs = 0, demoTotalMs = 0; // drive the cumulative whole-tour progress bar
+const TOUR_MOVE_FADE_MS = 350; // card fade-out/move/fade-in when a beat changes target
 
 function startDemo(mode){
   demoActive = true;
   demoMode = mode;
-  document.getElementById('welcomeOverlay').classList.remove('on');
+  hideOpeningCTAs();
   document.getElementById('tourOverlay').classList.add('on');
   document.getElementById('tourCard').classList.add('autoplay');
-  showDemoBeat(0);
+  demoElapsedMs = 0;
+  demoTotalMs = DEMO_STEPS[mode].reduce((sum,b)=>sum+b.holdMs, 0);
+  showDemoBeat(0, true); // true: first beat of the run, nothing to fade out of yet
 }
-function showDemoBeat(i){
+function showDemoBeat(i, isFirst){
   clearTimeout(demoTimer);
   const steps = DEMO_STEPS[demoMode];
   const beat = steps[i];
   if(!beat){ endDemo(); return; }
-  beat.action();
-  const target = document.querySelector(beat.target || '.crt-bezel');
-  if(target){ positionTourCard(target); setTimeout(()=>positionTourCard(target), 400); }
-  document.getElementById('tourTitle').textContent = beat.title;
-  document.getElementById('tourText').textContent = beat.text;
-  document.getElementById('tourProgress').textContent = (i+1)+' / '+steps.length;
-  const isLast = i === steps.length-1;
-  const nextBtn = document.getElementById('btnTourNext');
-  nextBtn.textContent = isLast ? '◉ BUY — $199 →' : 'SKIP AHEAD ›';
-  nextBtn.onclick = isLast ? openBuyLink : ()=>showDemoBeat(i+1);
-  document.getElementById('btnTourSkip').textContent = 'SKIP DEMO';
-  const fill = document.getElementById('tourAutoBarFill');
-  fill.style.transition = 'none'; fill.style.width = '0%';
-  requestAnimationFrame(()=>{ fill.style.transition = `width ${beat.holdMs}ms linear`; fill.style.width = '100%'; });
-  if(!isLast) demoTimer = setTimeout(()=>showDemoBeat(i+1), beat.holdMs);
+  const card = document.getElementById('tourCard');
+  if(tourHighlighted){ tourHighlighted.classList.remove('tour-highlight'); tourHighlighted = null; }
+
+  const reveal = ()=>{
+    beat.action();
+    const target = document.querySelector(beat.target || '.crt-bezel');
+    if(target){
+      target.classList.add('tour-highlight');
+      tourHighlighted = target;
+      positionTourCard(target); // moves + (re)shows the card at its new spot
+      setTimeout(()=>positionTourCard(target), 400);
+    }
+    card.classList.remove('fade-out');
+    document.getElementById('tourTitle').textContent = beat.title;
+    document.getElementById('tourText').textContent = beat.text;
+    document.getElementById('tourProgress').textContent = (i+1)+' / '+steps.length;
+    const isLast = i === steps.length-1;
+    const nextBtn = document.getElementById('btnTourNext');
+    nextBtn.textContent = isLast ? '◉ BUY — $199 →' : 'SKIP AHEAD ›';
+    nextBtn.onclick = isLast ? openBuyLink : ()=>showDemoBeat(i+1);
+    document.getElementById('btnTourSkip').textContent = 'SKIP DEMO';
+
+    // whole-tour progress bar: fills cumulatively across every beat (not
+    // reset each time), so it actually reads as "how far through the tour,"
+    // not just a per-beat countdown
+    const fill = document.getElementById('tourAutoBarFill');
+    const fromPct = demoTotalMs ? (demoElapsedMs/demoTotalMs*100) : 0;
+    demoElapsedMs += beat.holdMs;
+    const toPct = demoTotalMs ? (demoElapsedMs/demoTotalMs*100) : 100;
+    fill.style.transition = 'none'; fill.style.width = fromPct+'%';
+    requestAnimationFrame(()=>{ fill.style.transition = `width ${beat.holdMs}ms linear`; fill.style.width = toPct+'%'; });
+
+    if(!isLast) demoTimer = setTimeout(()=>showDemoBeat(i+1), beat.holdMs);
+  };
+
+  if(isFirst){
+    reveal();
+  } else {
+    card.classList.add('fade-out'); // fades out, THEN moves+repositions while invisible, THEN fades back in
+    setTimeout(reveal, TOUR_MOVE_FADE_MS);
+  }
 }
 function openBuyLink(){ window.open(GUMROAD_URL, '_blank', 'noopener'); }
 function endDemo(){
@@ -6165,7 +6268,7 @@ function endDemo(){
   demoActive = false;
   demoMode = null;
   document.getElementById('tourOverlay').classList.remove('on');
-  document.getElementById('tourCard').classList.remove('autoplay');
+  document.getElementById('tourCard').classList.remove('autoplay', 'fade-out');
   if(tourHighlighted){ tourHighlighted.classList.remove('tour-highlight'); tourHighlighted = null; }
   document.getElementById('btnTourNext').onclick = null;
   document.getElementById('btnTourSkip').textContent = 'SKIP';
