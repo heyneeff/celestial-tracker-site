@@ -272,6 +272,51 @@
     .crt-bezel{height:100%; box-sizing:border-box}
     .crt{height:100%}
   }
+
+  /* ---------- cinematic cold-open ---------- */
+  /* First visit only (see INTRO_SEEN_KEY in the JS): while the opening
+     time-warp plays, the console collapses to just the display, filling the
+     viewport with zero chrome — no nameplate, clock, nav, or date controls.
+     Deliberately reuses the SAME normal-document-flow full-bleed technique
+     the desktop breakpoint above already uses (body padding 0, main 100vh,
+     console 100%/no radius) rather than position:fixed — position is a
+     discrete property that can't be transitioned, so animating between a
+     fixed-fullscreen box and an in-flow card would just snap instead of
+     resizing smoothly. Staying in normal flow the whole time means every
+     property that changes here (width/height/padding/border-radius/the grid
+     column track) is a plain number, so removing this class — once the warp
+     finishes and the chart is cast — animates a real shrink-to-card instead
+     of a jump cut. .rail-col fades in on its own slightly-delayed opacity
+     transition (display can't animate, so visibility+opacity does the fade
+     instead) so the chrome doesn't pop in before the console has finished
+     resizing. */
+  .console{
+    transition:width .8s ease, height .8s ease, padding .8s ease,
+      border-radius .8s ease, box-shadow .8s ease, grid-template-columns .8s ease;
+  }
+  .rail-col{ transition:opacity .5s ease .2s, visibility 0s linear .2s; }
+  body.intro-cold-open{ padding:0; overflow:hidden; }
+  body.intro-cold-open main{ width:100%; height:100vh; height:100dvh; }
+  /* keeps the "rail" named area valid (just collapsed to 0 width) rather than
+     dropping it from grid-template-areas — an item whose named area no
+     longer exists falls back to CSS auto-placement instead of just
+     disappearing, which was creating an extra implicit row/column that stole
+     space from the display itself even with .rail-col invisible. */
+  body.intro-cold-open .console{
+    width:100%; max-width:none; height:100%;
+    border-radius:0; box-shadow:none; padding:0;
+    grid-template-columns:1fr 0px; grid-template-rows:1fr; grid-template-areas:"crt rail";
+  }
+  body.intro-cold-open .rail-col{
+    opacity:0; visibility:hidden; pointer-events:none; transition:none; overflow:hidden;
+  }
+  body.intro-cold-open .crt-bezel{ height:100%; border-radius:0; box-sizing:border-box }
+  body.intro-cold-open .crt{ height:100%; border-radius:0 }
+  /* the persistent buy pill floats outside .console entirely — not part of
+     the "no chrome" rule above, needs its own hide/fade */
+  .buy-pill{ transition:opacity .5s ease .2s, visibility 0s linear .2s; }
+  body.intro-cold-open .buy-pill{ opacity:0; visibility:hidden; pointer-events:none; transition:none; }
+
   @media(max-width:760px){
     .readout{width:auto; height:55%; bottom:auto}
   }
@@ -955,15 +1000,23 @@
   .welcome{position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; background:rgba(4,3,8,.86)}
   .welcome.on{display:flex}
   .welcome-card{
-    max-width:420px; background:var(--screen); border:1px solid var(--phos2-faint); border-radius:12px;
-    padding:22px 24px; box-shadow:0 0 40px rgba(0,0,0,.8), 0 0 30px rgba(var(--phos2-rgb),.15) inset;
+    max-width:480px; background:var(--screen); border:1px solid var(--phos2-faint); border-radius:12px;
+    padding:26px 28px; box-shadow:0 0 40px rgba(0,0,0,.8), 0 0 30px rgba(var(--phos2-rgb),.15) inset;
     color:var(--phos); font-size:13px; line-height:1.55;
   }
   .welcome-title{font-size:15px; font-weight:800; letter-spacing:.16em; color:var(--phos2); text-shadow:0 0 10px var(--phos2-glow); margin-bottom:12px}
-  .welcome-card p{margin:0 0 12px}
+  .welcome-card p{margin:0 0 16px}
   .welcome-card b{color:var(--phos2)}
   .welcome-card .key{width:100%; margin-top:4px}
-  .welcome-credit{margin-top:14px; font-size:10px; letter-spacing:.06em; color:var(--scr-muted); text-align:center}
+  /* the two big opening CTAs — side by side on anything roomier than a
+     phone, stacked full-width below it (same breakpoint the console itself
+     uses to go single-column) */
+  .welcome-cta-row{display:flex; gap:10px}
+  .key-lg{font-size:13px; padding:16px 12px 15px; letter-spacing:.08em}
+  #btnTakeTour{background:linear-gradient(180deg,var(--amber),#d99000); border-color:#8a6420; color:#1a1200; box-shadow:0 3px 0 #8a6420, 0 1px 0 rgba(255,255,255,.35) inset}
+  #btnTakeTour:active{box-shadow:0 0 0 #8a6420, 0 1px 0 rgba(255,255,255,.25) inset}
+  @media(max-width:520px){ .welcome-cta-row{flex-direction:column} }
+  .welcome-credit{margin-top:16px; font-size:10px; letter-spacing:.06em; color:var(--scr-muted); text-align:center}
 
   /* tester/access gate — sits above everything else (even the welcome modal,
      since access comes before onboarding), same visual language as .welcome.
@@ -1156,9 +1209,11 @@
 <div class="welcome" id="welcomeOverlay" role="dialog" aria-modal="true" aria-label="Welcome">
   <div class="welcome-card">
     <div class="welcome-title">CALCULATE CHARTS. CHECK TRANSITS. FIND ELECTIONS. COMPARE.</div>
-    <p>This is the real instrument, live — the sky above is really moving right now. Click any mode below for a guided look at what it does, then buy to unlock it for good.</p>
-    <button class="key" id="btnStartTour">◉︎ SHOW ME AROUND</button>
-    <button class="key" id="btnWelcomeSkip" style="margin-top:8px; background:transparent; box-shadow:none; border-color:transparent; color:#8a78b8">SKIP</button>
+    <p>This is the real instrument, live.</p>
+    <div class="welcome-cta-row">
+      <button class="key key-lg" id="btnTakeTour">◉︎ TAKE THE TOUR</button>
+      <button class="key key-lg" id="btnStartExploring">START EXPLORING</button>
+    </div>
     <div class="welcome-credit">Brought to you by the Diviner's Guild and your friend NEEFF.</div>
   </div>
 </div>
@@ -5884,11 +5939,12 @@ function tick(now){
 // init
 els.dtInput.value = toLocalDatetimeInputValue(new Date());
 lastLiveRecompute = performance.now();
-// one-time welcome + guided tour for first-time visitors — never shown again
-// on this device once dismissed, skipped, or completed. The welcome card
-// covers WHAT the app is; the tour that follows covers HOW to actually use
-// the specific controls, pointing an arrow-tipped card at each one in turn
-// rather than trying to explain everything in one static popup.
+// cinematic first-visit cold open + CTA panel — see INTRO_SEEN_KEY below.
+// The cold open sells WHAT this is (a real instrument, live) by warping the
+// actual sky forward to right now and casting a live chart before any chrome
+// appears; the CTA panel that follows offers either a guided demo of the
+// locked features or free rein over what's already unlocked (Orbit View /
+// Cast Chart).
 // ---------- license/tester-gate machinery intentionally not present ----------
 // This build is the public preview fork (celestial-tracker-site) — it never
 // contains a working licensed/unlock path at all, by design: even a full
@@ -5897,15 +5953,8 @@ lastLiveRecompute = performance.now();
 // lives at a separate URL customers are pointed to after purchase.
 
 const WELCOME_SEEN_KEY = 'ct12_welcome_seen';
-const TOUR_STEPS = [
-  {target:'.crt-bezel', title:'THE ORBIT VIEW', text:'Drag to rotate, pinch or scroll to zoom, tap any planet to focus on it.'},
-  {target:'#dtInput', title:'TIME TRAVEL', text:'Scrub the date and time to see the sky at any moment — past or future.'},
-  {target:'#btnCastChart', title:'CAST CHART', text:'A flat wheel view of the sky at whatever moment you\'re on.'},
-  {target:'#btnNatal', title:'NATAL / TRANSITS', text:'A birth chart, personal transits, houses, and returns. In the real app: saved only on your device — no account, nothing sent anywhere. Click it now for a live walkthrough.'},
-  {target:'#btnCompareDemo', title:'COMPARE', text:'Up to four charts at once, live, with tap-to-isolate aspects. Click it now to see it running.'},
-  {target:'#btnSearch', title:'ELECTION FINDER', text:'Toggle conditions to look for and ones to avoid, then find every window that fits all of them at once. Click it now for a live walkthrough.'},
-];
-let tourStep = 0, tourHighlighted = null;
+const INTRO_SEEN_KEY = 'ct12_intro_seen';
+let tourHighlighted = null;
 function endTour(){
   localStorage.setItem(WELCOME_SEEN_KEY, '1');
   document.getElementById('tourOverlay').classList.remove('on');
@@ -5934,42 +5983,53 @@ function positionTourCard(target){
   const arrowLeft = Math.min(Math.max(14, r.left + r.width/2 - left - 6), cw-20);
   arrow.style.left = arrowLeft+'px';
 }
-function showTourStep(i){
-  if(tourHighlighted) tourHighlighted.classList.remove('tour-highlight');
-  const step = TOUR_STEPS[i];
-  const target = document.querySelector(step.target);
-  if(!target){ tourStep=i+1; if(tourStep<TOUR_STEPS.length) showTourStep(tourStep); else endTour(); return; }
-  target.scrollIntoView({behavior:'smooth', block:'center'});
-  target.classList.add('tour-highlight');
-  tourHighlighted = target;
-  document.getElementById('tourTitle').textContent = step.title;
-  document.getElementById('tourText').textContent = step.text;
-  document.getElementById('tourProgress').textContent = (i+1)+' / '+TOUR_STEPS.length;
-  document.getElementById('btnTourNext').textContent = i<TOUR_STEPS.length-1 ? 'NEXT ›' : 'DONE';
-  // scrollIntoView is smooth (async) — position once now and once after it
-  // settles, so the card doesn't end up pointing at the target's pre-scroll spot
-  positionTourCard(target);
-  setTimeout(()=>positionTourCard(target), 400);
-}
-function startTour(){
-  document.getElementById('welcomeOverlay').classList.remove('on');
-  document.getElementById('tourOverlay').classList.add('on');
-  tourStep = 0;
-  showTourStep(tourStep);
-}
-if(!localStorage.getItem(WELCOME_SEEN_KEY)){
+function showOpeningCTAs(){
   document.getElementById('welcomeOverlay').classList.add('on');
 }
-document.getElementById('btnStartTour').addEventListener('click', startTour);
-document.getElementById('btnWelcomeSkip').addEventListener('click', ()=>{
+
+// The cold-open time-warp: races the real sky from a fixed point in the past
+// up to this exact instant, then casts a live chart from it. Reuses the
+// app's own date-tween machinery (goToDate/interpState/tick) exactly as a
+// manual date-jump would — the eased curve already reads as "speeding up
+// then settling," so no separate easing was needed. WARP_BACK is long enough
+// that the fast inner planets (Mercury/Venus/Moon) visibly lap and the outer
+// ones visibly creep; WARP_MS is tuned to read as one continuous sweep
+// rather than a slog.
+const COLD_OPEN_WARP_BACK_MS = 1000*60*60*24*30*8; // ~8 months
+const COLD_OPEN_WARP_MS = 4200;
+function playColdOpen(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    showView('chart');
+    showOpeningCTAs();
+    return;
+  }
+  document.body.classList.add('intro-cold-open');
+  displayState = computeState(new Date(Date.now() - COLD_OPEN_WARP_BACK_MS));
+  goToDate(new Date(), true, COLD_OPEN_WARP_MS, ()=>{
+    showView('chart'); // same transition the CAST CHART nav button uses
+    // a brief beat on the freshly-cast, now-live chart before the console
+    // resizes back down and its chrome fades in around it
+    setTimeout(()=>{
+      document.body.classList.remove('intro-cold-open');
+      setTimeout(fitCrt, 850); // after the CSS resize transition settles
+      showOpeningCTAs();
+    }, 500);
+  });
+}
+if(!localStorage.getItem(INTRO_SEEN_KEY)){
+  localStorage.setItem(INTRO_SEEN_KEY, '1');
+  playColdOpen();
+} else if(!localStorage.getItem(WELCOME_SEEN_KEY)){
+  // returning visitor who never finished onboarding — no warp replay, just
+  // the CTA panel over whatever's already on screen
+  showOpeningCTAs();
+}
+document.getElementById('btnTakeTour').addEventListener('click', startFullDemo);
+document.getElementById('btnStartExploring').addEventListener('click', ()=>{
   localStorage.setItem(WELCOME_SEEN_KEY, '1');
   document.getElementById('welcomeOverlay').classList.remove('on');
 });
 document.getElementById('btnTourSkip').addEventListener('click', endTour);
-document.getElementById('btnTourNext').addEventListener('click', ()=>{
-  tourStep++;
-  if(tourStep < TOUR_STEPS.length) showTourStep(tourStep); else endTour();
-});
 window.addEventListener('resize', ()=>{
   if(tourHighlighted) positionTourCard(tourHighlighted);
 });
@@ -5978,8 +6038,8 @@ window.addEventListener('resize', ()=>{
 // This fork (the public celestial-tracker-site build) never has a real
 // unlock path — every visitor sees these scripted, auto-advancing
 // walkthroughs instead of the real interactive Natal/Compare/Election
-// screens. Reuses the tour-card DOM/positioning above; TOUR_STEPS/showTourStep/
-// startTour/endTour are untouched — this is a separate, parallel path.
+// screens. Reuses the tour-card DOM/positioning (positionTourCard/endTour)
+// defined above.
 //
 // The app's own "birth chart" — cast for its real first commit. Never
 // written to localStorage; a plain constant, so it can never collide with
@@ -6050,6 +6110,23 @@ const DEMO_STEPS = {
     DEMO_CLOSING_BEAT,
   ],
 };
+
+// Concise cross-feature highlight reel for the opening "TAKE THE TOUR" CTA —
+// two tightest beats each from Natal, Compare, and Election Finder, trimmed
+// shorter than their standalone single-feature walkthroughs above, plus the
+// shared closing/buy beat. Every beat still drives the real feature code
+// (renderProfileView/renderCompare/runSearch) — nothing here is a mockup.
+DEMO_STEPS.full = [
+  { ...DEMO_STEPS.natal[0], holdMs:3400 },
+  { ...DEMO_STEPS.natal[2], holdMs:3800 },
+  { ...DEMO_STEPS.compare[0], holdMs:3600 },
+  { ...DEMO_STEPS.compare[2], holdMs:3600 },
+  { ...DEMO_STEPS.election[0], holdMs:3400 },
+  { title:'EVERY WINDOW THAT FITS, RANKED BY DATE', text:'A real calendar search, starting today — tap any hit to jump straight to that chart.', holdMs:4000, target:'.crt-bezel',
+    action: ()=>{ runSearch(); } },
+  DEMO_CLOSING_BEAT,
+];
+function startFullDemo(){ startDemo('full'); } // startDemo already hides welcomeOverlay itself
 
 let demoTimer = null, demoMode = null; // demoActive itself is declared near loadProfiles, above
 
