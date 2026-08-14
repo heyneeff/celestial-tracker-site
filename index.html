@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Celestial Tracker — CT-12</title>
+<meta name="description" content="A living map of the sky, in your browser. Hover a planet to isolate its aspects, freeze a snapshot moment, compare up to 4 charts at once. One payment, no subscription.">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&display=swap">
+<style>
+  :root{
+    --room:#0c0a12; --screen:#0a0812;
+    --phos:#7dd3ff; --phos-dim:#3f6f80; --phos-faint:#1e3540;
+    --phos2:#b490ff; --phos2-dim:#5a4980; --phos2-faint:#2c2440;
+    --amber:#ffb000; --amber-dim:#8a6420;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    --plate: 'Michroma', var(--mono);
+    --maxw: 900px;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--room)}
+  body{
+    margin:0; background:var(--room); color:var(--phos2);
+    font-family:var(--mono); line-height:1.6; font-size:15px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--phos2)}
+  a:focus-visible, button:focus-visible, .btn:focus-visible{
+    outline:2px solid var(--amber); outline-offset:3px;
+  }
+  h1,h2,h3{ text-wrap:balance }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
+
+  /* faint scanline wash — same texture language as the instrument itself */
+  body::before{
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 4px);
+    opacity:.3; mix-blend-mode:multiply;
+  }
+  @media (prefers-reduced-motion:no-preference){
+    body::before{ animation:flicker 7s steps(1) infinite }
+  }
+  @keyframes flicker{ 0%,97%,100%{opacity:.3} 98%{opacity:.18} }
+
+  header.hero{
+    position:relative; padding:70px 0 20px; text-align:center;
+    border-bottom:1px solid var(--phos-faint);
+    overflow:hidden;
+    background:radial-gradient(ellipse 60% 50% at 50% 20%, rgba(125,211,255,.06), transparent 70%);
+  }
+  #orbit{ display:block; margin:0 auto 6px; }
+  @media (prefers-reduced-motion:no-preference){
+    .hero-reveal{ opacity:0; animation:rise .7s ease-out forwards; }
+    .eyebrow{ animation-delay:.05s }
+    h1{ animation-delay:.15s }
+    .model{ animation-delay:.25s }
+    .tagline{ animation-delay:.35s }
+    .cta-row{ animation-delay:.45s }
+    .price-note{ animation-delay:.55s }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+  .eyebrow{
+    font-family:var(--plate); color:var(--amber); letter-spacing:.16em; font-size:10px; text-transform:uppercase;
+  }
+  h1{
+    font-family:var(--plate); font-size:clamp(22px,4.6vw,36px); margin:16px 0 6px; color:var(--phos);
+    text-shadow:0 0 22px rgba(125,211,255,.4); letter-spacing:.04em; font-weight:400;
+  }
+  .model{color:var(--phos2-dim); font-size:13px; letter-spacing:.1em; margin-bottom:24px; text-transform:uppercase}
+  .tagline{
+    font-size:clamp(15px,2.6vw,18px); color:var(--phos2); max-width:600px; margin:0 auto 30px;
+  }
+  .cta-row{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:12px}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:15px; font-weight:600;
+    padding:14px 26px; border-radius:4px; text-decoration:none; cursor:pointer;
+    border:1px solid transparent; letter-spacing:.03em;
+  }
+  .btn-buy{ background:var(--amber); color:#1a1200; box-shadow:0 0 26px rgba(255,176,0,.28) }
+  .btn-buy:hover{ filter:brightness(1.08) }
+  .btn-ghost{ background:transparent; border-color:var(--phos-dim); color:var(--phos) }
+  .btn-ghost:hover{ border-color:var(--phos) }
+  .price-note{ color:var(--phos2-dim); font-size:12.5px; margin-top:8px; letter-spacing:.02em }
+
+  section{ padding:58px 0; border-bottom:1px solid var(--phos-faint) }
+  .eyebrow-sm{ color:var(--amber-dim); letter-spacing:.14em; font-size:11px; text-transform:uppercase; margin-bottom:8px }
+  h2{ color:var(--phos); font-size:21px; letter-spacing:.02em; margin:0 0 10px; font-weight:700 }
+  .section-lede{ color:var(--phos2-dim); max-width:600px; margin-bottom:38px; font-size:14px }
+
+  .features{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px }
+  @media (max-width:640px){ .features{grid-template-columns:1fr} }
+  .feature{ border:1px solid var(--phos-faint); border-radius:6px; padding:20px; background:rgba(125,211,255,.02) }
+  .feature h3{
+    color:var(--phos); font-size:14.5px; letter-spacing:.03em; margin:0 0 8px;
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+  }
+  .feature h3 .glyph{ color:var(--amber); font-size:13px }
+  .feature h3 .tag{
+    font-size:9.5px; background:var(--amber-dim); color:#ffe8b0; padding:2px 7px;
+    border-radius:3px; letter-spacing:.05em; font-weight:600;
+  }
+  .feature p{ color:var(--phos2-dim); font-size:13.5px; margin:0 0 14px }
+  .media-slot{
+    aspect-ratio:16/10; border:1px dashed var(--phos-dim); border-radius:4px;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    background:var(--screen);
+  }
+  .media-slot img{ width:100%; height:100%; object-fit:cover; display:block }
+  .media-slot .placeholder{
+    color:var(--phos-dim); font-size:11px; text-align:center; padding:12px; display:none;
+    letter-spacing:.06em; text-transform:uppercase;
+  }
+
+  .compare-note{
+    border-left:2px solid var(--phos2-dim); padding:16px 20px; color:var(--phos2);
+    font-size:14px; background:rgba(180,144,255,.05); border-radius:0 6px 6px 0;
+  }
+  .compare-note b{ color:var(--phos) }
+
+  .pricing{ text-align:center }
+  .price-card{
+    max-width:380px; margin:0 auto; border:1px solid var(--phos-dim); border-radius:8px;
+    padding:38px 30px; background:var(--screen);
+  }
+  .price-big{ font-family:var(--plate); font-size:44px; color:var(--amber); font-weight:400; font-variant-numeric:tabular-nums; text-shadow:0 0 30px rgba(255,176,0,.3) }
+  .price-sub{ color:var(--phos-dim); font-size:12.5px; margin-bottom:24px; letter-spacing:.03em }
+  .price-list{ list-style:none; padding:0; margin:0 0 26px; text-align:left; font-size:13.5px; color:var(--phos2) }
+  .price-list li{ padding:8px 0; border-bottom:1px solid var(--phos-faint) }
+  .price-list li:last-child{ border-bottom:none }
+  .price-list li::before{ content:'◉ '; color:var(--amber) }
+
+  .faq dt{ color:var(--phos); font-weight:600; margin-top:22px; font-size:14.5px }
+  .faq dd{ color:var(--phos2-dim); margin:6px 0 0; font-size:13.5px }
+
+  footer{ padding:44px 0 70px; text-align:center; color:var(--phos-dim); font-size:12.5px; letter-spacing:.02em }
+  footer a{ color:var(--phos-dim) }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <canvas id="orbit" width="220" height="220" aria-hidden="true"></canvas>
+    <div class="eyebrow hero-reveal">Model CT-12</div>
+    <h1 class="hero-reveal">CELESTIAL TRACKER</h1>
+    <div class="model hero-reveal">a living map of the sky, in your browser</div>
+    <p class="tagline hero-reveal">Calculate charts. Check transits. Find elections. Compare.</p>
+    <div class="cta-row hero-reveal">
+      <!-- Replace YOUR_GUMROAD_PERMALINK below once the Gumroad product exists -->
+      <a class="btn btn-buy gumroad-button" href="https://gum.co/YOUR_GUMROAD_PERMALINK?wanted=true"><span class="glyph">◉</span> Get it — $199</a>
+      <a class="btn btn-ghost" href="#features"><span class="glyph">⌕</span> See what it does</a>
+    </div>
+    <div class="price-note hero-reveal">One payment. No subscription. License key emailed instantly.</div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow-sm">◈ Readouts</div>
+    <h2>What it does</h2>
+    <p class="section-lede">Everything below runs client-side, in a tab. No install required — though it'll install itself as an app if you want an icon on your dock.</p>
+
+    <div class="features">
+
+      <div class="feature">
+        <h3><span class="glyph">☍</span> Hover to isolate <span class="tag">not in Astro Gold or Solar Fire</span></h3>
+        <p>Hover any planet and its aspect lines pull forward while the rest of the web fades out — even with every aspect switched on. No toggling, no clicking through a list.</p>
+        <div class="media-slot">
+          <img src="media/hover-isolate.gif" alt="Hovering a planet isolates its aspect lines" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="placeholder">hover-isolate.gif</div>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h3><span class="glyph">⧗</span> Snapshot <span class="tag">not in Astro Gold or Solar Fire</span></h3>
+        <p>Freeze any moment as a standing amber overlay, then keep going — the snapshot stays put while the live sky keeps moving, cross-aspecting against it in real time.</p>
+        <div class="media-slot">
+          <img src="media/snapshot.gif" alt="Snapshot mode frozen against the live sky" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="placeholder">snapshot.gif</div>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h3><span class="glyph">◍</span> Compare up to 4 charts</h3>
+        <p>Stack up to four people in one wheel, each ring toggleable on its own. The same hover-isolation applies across every ring, live.</p>
+        <div class="media-slot">
+          <img src="media/compare.gif" alt="Four charts compared in one wheel" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="placeholder">compare.gif</div>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h3><span class="glyph">◈</span> Orbit view</h3>
+        <p>The actual solar system, not just a flat wheel. Drag to rotate, pinch or scroll to zoom, tap any planet to focus on it. Scrub the date to any moment, past or future.</p>
+        <div class="media-slot">
+          <img src="media/orbit.gif" alt="3D orbit view of the solar system" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="placeholder">orbit.gif</div>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h3><span class="glyph">⌕</span> Election finder</h3>
+        <p>Toggle conditions to look for and conditions to avoid, and it finds every window that satisfies all of them at once — instead of scrubbing the clock by hand.</p>
+        <div class="media-slot">
+          <img src="media/election.gif" alt="Election finder results" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="placeholder">election.gif</div>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h3><span class="glyph">⏚</span> Private by default</h3>
+        <p>Birth charts are saved to your browser's local storage only. No account, no server round-trip, nothing sent anywhere.</p>
+        <div class="media-slot">
+          <img src="media/privacy.gif" alt="Local-only chart storage" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="placeholder">privacy.gif</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow-sm">◍ Context</div>
+    <h2>How it compares</h2>
+    <p class="compare-note">
+      Astro Gold and Solar Fire can also stack up to 4 charts in a wheel — that part isn't exclusive to CT-12.
+      What's actually different: <b>hover a planet and its aspects isolate on the fly</b>, and <b>a snapshot moment
+      stays live-compared against the real-time sky</b> instead of sitting as a static second wheel. And it opens
+      in a browser tab — no download, no install, works on anything with a screen.
+    </p>
+  </div>
+</section>
+
+<section class="pricing">
+  <div class="wrap">
+    <div class="eyebrow-sm">◉ License</div>
+    <h2>Get it</h2>
+    <p class="section-lede" style="margin-left:auto;margin-right:auto">One price. No tiers, no subscription, no upsell.</p>
+    <div class="price-card">
+      <div class="price-big">$199</div>
+      <div class="price-sub">one-time payment · yours for good</div>
+      <ul class="price-list">
+        <li>License key emailed the moment you buy</li>
+        <li>Every future update, automatically — it's one app, everyone's on the same version</li>
+        <li>Works in any modern browser, installable as an app</li>
+      </ul>
+      <a class="btn btn-buy gumroad-button" href="https://gum.co/YOUR_GUMROAD_PERMALINK?wanted=true" style="width:100%; justify-content:center">Buy Celestial Tracker</a>
+    </div>
+  </div>
+</section>
+
+<section style="border-bottom:none">
+  <div class="wrap">
+    <div class="eyebrow-sm">⌕ Questions</div>
+    <h2>Questions</h2>
+    <dl class="faq">
+      <dt>How do I get my license key?</dt>
+      <dd>It's generated and emailed to you automatically the moment your purchase goes through — check the receipt Gumroad sends.</dd>
+
+      <dt>What platforms does it run on?</dt>
+      <dd>Any modern browser, desktop or mobile. It can also be installed as a standalone app from the same page.</dd>
+
+      <dt>Do I need an account?</dt>
+      <dd>No. Your license key unlocks the app on whatever device you enter it on. Chart data you save stays local to that browser.</dd>
+
+      <dt>Problem with your order?</dt>
+      <dd>Email <a href="mailto:neeffneeff@gmail.com">neeffneeff@gmail.com</a> and it'll get sorted.</dd>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  Brought to you by the Diviner's Guild and your friend NEEFF.
+</footer>
+
+<script>
+(function(){
+  var c = document.getElementById('orbit');
+  var ctx = c.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var size = 220;
+  c.width = size*dpr; c.height = size*dpr; c.style.width=size+'px'; c.style.height=size+'px';
+  ctx.scale(dpr,dpr);
+  var cx=size/2, cy=size/2;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var rings = [
+    {r:38, speed:0.021, color:'#7dd3ff', a0:0.2},
+    {r:64, speed:0.013, color:'#b490ff', a0:2.4},
+    {r:92, speed:0.008, color:'#ffb000', a0:4.1}
+  ];
+  function frame(t){
+    ctx.clearRect(0,0,size,size);
+    ctx.strokeStyle='rgba(125,211,255,0.14)';
+    ctx.lineWidth=1;
+    rings.forEach(function(ring){
+      ctx.beginPath(); ctx.arc(cx,cy,ring.r,0,Math.PI*2); ctx.stroke();
+    });
+    ctx.beginPath(); ctx.arc(cx,cy,3.5,0,Math.PI*2); ctx.fillStyle='#ffe8b0'; ctx.fill();
+    rings.forEach(function(ring){
+      var ang = ring.a0 + (reduced?0:t*ring.speed);
+      var x = cx+Math.cos(ang)*ring.r, y = cy+Math.sin(ang)*ring.r;
+      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+      ctx.fillStyle=ring.color; ctx.shadowColor=ring.color; ctx.shadowBlur=8;
+      ctx.fill(); ctx.shadowBlur=0;
+    });
+    if(!reduced) requestAnimationFrame(function(ts){ frame(ts/1000); });
+  }
+  requestAnimationFrame(function(ts){ frame(ts/1000); });
+})();
+</script>
+
+<script src="https://gumroad.com/js/gumroad.js"></script>
+</body>
+</html>
