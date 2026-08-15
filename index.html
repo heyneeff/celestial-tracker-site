@@ -324,10 +324,6 @@
   }
   body.intro-cold-open .crt-bezel{ height:100%; border-radius:0; box-sizing:border-box }
   body.intro-cold-open .crt{ height:100%; border-radius:0 }
-  /* the persistent buy pill floats outside .console entirely — not part of
-     the "no chrome" rule above, needs its own hide/fade */
-  .buy-pill{ transition:opacity .625s ease .25s, visibility 0s linear .25s; }
-  body.intro-cold-open .buy-pill{ opacity:0; visibility:hidden; pointer-events:none; transition:none; }
 
   /* large glowing cold-open title, over the fullscreen warp only — fades/
      scales in, breathes gently while held, then fades back out before the
@@ -1144,14 +1140,21 @@
   /* auto-demo reuses every rule above as-is — this just widens the card a
      touch (demo copy runs longer than the click-through tour's) and adds a
      timed progress fill standing in for the tour's manual NEXT button */
+  /* big in-flow CTA, parked right under the live clock in the rail — was a
+     small floating corner pill before, moved into normal flow so it fades
+     with the rest of .rail-col during the cold-open instead of needing its
+     own hide rule */
   .buy-pill{
-    position:fixed; top:12px; right:12px; z-index:40;
-    background:var(--amber); color:#1a1200; font-family:var(--mono); font-weight:700;
-    font-size:12px; letter-spacing:.03em; padding:8px 14px; border-radius:5px;
-    text-decoration:none; box-shadow:0 0 18px rgba(255,176,0,.3);
+    display:block; text-align:center; text-decoration:none; box-sizing:border-box;
+    margin-top:10px; padding:16px 14px; border-radius:8px;
+    font-family:var(--mono); font-weight:800; font-size:17px; letter-spacing:.05em;
+    background:linear-gradient(180deg,var(--amber),#d99000); color:#1a1200;
+    border:1px solid #8a6420;
+    box-shadow:0 3px 0 #8a6420, 0 1px 0 rgba(255,255,255,.35) inset, 0 0 22px rgba(255,176,0,.3);
+    transition:filter .05s, transform .05s, box-shadow .05s;
   }
-  .buy-pill:hover{filter:brightness(1.08)}
-  @media (max-width:640px){ .buy-pill{top:auto; bottom:12px; right:12px; font-size:11px; padding:7px 12px} }
+  .buy-pill:hover{filter:brightness(1.06)}
+  .buy-pill:active{transform:translateY(3px); box-shadow:0 0 0 #8a6420, 0 1px 0 rgba(255,255,255,.25) inset}
   .tour-card.autoplay{width:280px}
   /* whole-tour cumulative progress bar (not a per-beat countdown — see
      demoElapsedMs/demoTotalMs in the JS), thickened and glowing to actually
@@ -1233,6 +1236,8 @@
       <div class="now-sub" id="nowSub">SYNCING…</div>
     </div>
 
+    <a id="btnBuyPersistent" class="buy-pill" href="#" target="_blank" rel="noopener">◉ BUY — $199</a>
+
     <div class="timepanel">
       <div class="cmp-aspect-overlay" id="cmpAspectOverlay"></div>
       <div class="time-row">
@@ -1286,8 +1291,6 @@
   </div>
 </div>
 </main>
-
-<a id="btnBuyPersistent" class="buy-pill" href="#" target="_blank" rel="noopener">◉ BUY — $199</a>
 
 <div class="intro-title" id="introTitle" aria-hidden="true">WELCOME TO<br>THE CELESTIAL TRACKER</div>
 
