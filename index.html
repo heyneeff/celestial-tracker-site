@@ -433,6 +433,21 @@
      chart-casting console. */
   .chartview{position:absolute; inset:0; z-index:6; display:none; box-sizing:border-box}
   .chartview.on{display:block}
+  /* cold-open's small live chart preview, and its grow-to-full reveal.
+     Reparameterized as explicit top/right/width/height (bottom/left pinned
+     to auto in both states) rather than relying on inset:0's implicit auto
+     sizing — transitioning to/from "auto" width/height doesn't animate
+     reliably, but four concrete lengths on both ends do. */
+  body.intro-cold-open .chartview{
+    inset:auto; top:0; right:0; bottom:auto; left:auto; width:100%; height:100%;
+    transition:top 1.1s ease, right 1.1s ease, width 1.1s ease, height 1.1s ease,
+      border-radius 1.1s ease, box-shadow 1.1s ease;
+  }
+  body.intro-cold-open .chartview.chart-intro-preview{
+    display:block; top:16px; right:16px; width:30%; height:30%; min-width:160px; min-height:160px;
+    border-radius:10px; box-shadow:0 0 0 1px var(--phos2-faint), 0 14px 34px rgba(0,0,0,.55);
+    z-index:56; /* clears canvas3d/readout, stays under .intro-title (61) */
+  }
   /* touch-action:none so a pinch drives OUR zoom instead of the browser's
      native page-zoom gesture grabbing it first */
   .chartview canvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none}
@@ -1049,36 +1064,46 @@
   .signature{text-align:center; margin-top:6px; font-size:11px; letter-spacing:.35em; font-weight:800; color:#847c9c}
 
   /* one-time first-visit explainer — dismissing sets a localStorage flag so
-     it never shows again on this device; returning visitors never see it */
-  .welcome{position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; background:rgba(4,3,8,.86); opacity:0; transition:opacity .7s ease}
+     it never shows again on this device; returning visitors never see it.
+     No dark backdrop and right-aligned (not centered): the chart it's next
+     to is the point, so it stays fully visible, not dimmed behind a modal.
+     pointer-events:none on the wrapper lets clicks/drags reach the chart
+     and orbit view underneath; only the card itself re-enables them. */
+  .welcome{
+    position:fixed; inset:0; z-index:50; display:none;
+    align-items:center; justify-content:flex-end; padding:24px 5vw; box-sizing:border-box;
+    pointer-events:none; opacity:0; transition:opacity .7s ease;
+  }
   .welcome.on{display:flex}
   .welcome.on.show{opacity:1}
   .welcome-card{
-    max-width:480px; background:var(--screen); border:1px solid var(--phos2-faint); border-radius:12px;
+    max-width:400px; max-height:88vh; overflow-y:auto; pointer-events:auto;
+    background:var(--screen); border:1px solid var(--phos2-faint); border-radius:12px;
     padding:26px 28px; box-shadow:0 0 40px rgba(0,0,0,.8), 0 0 30px rgba(var(--phos2-rgb),.15) inset;
     color:var(--phos); font-size:13px; line-height:1.55;
   }
-  .welcome-title{font-size:15px; font-weight:800; letter-spacing:.16em; color:var(--phos2); text-shadow:0 0 10px var(--phos2-glow); margin-bottom:12px}
+  .welcome-title{font-size:19px; font-weight:800; letter-spacing:.1em; color:var(--phos2); text-shadow:0 0 10px var(--phos2-glow); margin-bottom:16px}
   .welcome-card p{margin:0 0 16px}
   .welcome-card b{color:var(--phos2)}
   .welcome-card .key{width:100%; margin-top:4px}
-  /* feature tags reveal one at a time (JS adds .show to each in sequence,
-     see showOpeningCTAs) before the single CTA below pops open */
-  .welcome-features{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px}
+  /* the feature list reveals one line at a time, top to bottom, in a big
+     font (JS adds .show to each in sequence — see showOpeningCTAs) before
+     the CTA below pops open */
+  .welcome-features{display:flex; flex-direction:column; gap:11px; margin:0 0 22px}
   .welcome-feature{
-    font-size:11px; font-weight:700; letter-spacing:.07em; padding:6px 11px;
-    border:1px solid var(--phos2-faint); border-radius:20px; color:var(--phos2);
-    background:rgba(var(--phos2-rgb),.08);
-    opacity:0; transform:translateY(6px); transition:opacity .45s ease, transform .45s ease;
+    font-size:18px; font-weight:800; letter-spacing:.02em; color:var(--phos2);
+    text-shadow:0 0 8px var(--phos2-glow);
+    opacity:0; transform:translateX(16px); transition:opacity .5s ease, transform .5s ease;
   }
-  .welcome-feature.show{opacity:1; transform:translateY(0)}
-  /* single opening CTA — held invisible/shrunk until the feature row has
+  .welcome-feature.show{opacity:1; transform:translateX(0)}
+  /* single opening CTA — held invisible/shrunk until the feature list has
      finished revealing, then pops open (overshoot ease) rather than fading
      in flat, so it reads as an arrival rather than just more of the same list */
   .welcome-cta-row{display:flex; gap:10px; opacity:0; transform:scale(.85); transition:opacity .45s ease, transform .45s cubic-bezier(.34,1.56,.64,1)}
   .welcome-cta-row.show{opacity:1; transform:scale(1)}
   .key-lg{font-size:13px; padding:16px 12px 15px; letter-spacing:.08em}
   @media(max-width:520px){ .welcome-cta-row{flex-direction:column} }
+  @media(max-width:760px){ .welcome{justify-content:center; padding:16px} }
   .welcome-credit{margin-top:16px; font-size:10px; letter-spacing:.06em; color:var(--scr-muted); text-align:center}
 
   /* tester/access gate — sits above everything else (even the welcome modal,
@@ -1298,11 +1323,22 @@
   <div class="welcome-card">
     <div class="welcome-title">FLEXIBLE CHART CASTING</div>
     <div class="welcome-features" id="welcomeFeatures">
-      <span class="welcome-feature">NATAL CHARTS</span>
-      <span class="welcome-feature">LIVE TRANSITS</span>
+      <span class="welcome-feature">LIVE ORBIT VIEW</span>
+      <span class="welcome-feature">CAST ANY CHART</span>
+      <span class="welcome-feature">NATAL + TRANSITS</span>
       <span class="welcome-feature">COMPARE 4 CHARTS</span>
+      <span class="welcome-feature">COMPOSITE CHARTS</span>
       <span class="welcome-feature">ELECTION FINDER</span>
+      <span class="welcome-feature">NAMED ASPECT PATTERNS</span>
+      <span class="welcome-feature">VERTEX + PART OF FORTUNE</span>
       <span class="welcome-feature">EXPORT AS IMAGE</span>
+      <span class="welcome-feature">HOUSE SYSTEM SWITCHING</span>
+      <span class="welcome-feature">LIGHT / DARK SCREEN</span>
+      <span class="welcome-feature">FULL TIME CONTROLS</span>
+      <span class="welcome-feature">RETROGRADE TRACKER</span>
+      <span class="welcome-feature">GEOLOCATED HOUSES</span>
+      <span class="welcome-feature">PLANETARY HOURS</span>
+      <span class="welcome-feature">WORKS OFFLINE</span>
     </div>
     <div class="welcome-cta-row" id="welcomeCtaRow">
       <button class="key key-lg" id="btnStartExploring">START EXPLORING</button>
@@ -3252,6 +3288,7 @@ els.scrubMin.addEventListener('input', ()=>{
 
 // ---------- view toggling ----------
 let activeView = 'orbit';
+let introChartPreviewOn = false; // true only during the cold-open's small corner chart preview — see playColdOpen
 // canvas3d (the galaxy) is always rendering as the CRT's backdrop; showView just
 // toggles which overlay — the placement list or the chart wheel — sits on top of it
 const views = { orbit:els.readout, chart:els.chartview, natal:els.natalview, search:els.searchview, hours:els.hoursview };
@@ -6316,7 +6353,10 @@ function tick(now){
   }
 
   render3d(displayState); // always-on galaxy backdrop, regardless of which overlay is active
-  if(activeView==='chart'){
+  // introChartPreviewOn keeps the wheel actually live-updating during the
+  // cold-open's small corner preview, before activeView itself ever
+  // switches to 'chart' — see playColdOpen
+  if(activeView==='chart' || introChartPreviewOn){
     const chartAspects = computeAspects(displayState);
     // houses/zodiac orientation is driven by displayState.date (the scrub-
     // controlled moment), same as the planets themselves — a "chart of the
@@ -6449,12 +6489,14 @@ function fadeInEl(el, ms){
   }));
   setTimeout(()=>{ el.style.transition=''; el.style.opacity=''; }, ms+80);
 }
-// Feature tags list one at a time in a row, then the single CTA pops open
-// once the row's finished — same staggered-reveal beat whether this follows
-// the full cold-open or is just re-shown to a returning visitor who never
-// finished onboarding. Respects reduced-motion by skipping straight to
-// everything visible instead of staggering.
-const WELCOME_FEATURE_STAGGER_MS = 260;
+// Feature list reveals one line at a time, top to bottom, then the single
+// CTA pops open once it's finished — same staggered-reveal beat whether this
+// follows the full cold-open or is just re-shown to a returning visitor who
+// never finished onboarding. Respects reduced-motion by skipping straight to
+// everything visible instead of staggering. Kept quick per-line (16 features
+// at 260ms each would take 4+ seconds just to finish listing) so the whole
+// reveal stays brisk.
+const WELCOME_FEATURE_STAGGER_MS = 130;
 function showOpeningCTAs(){
   const el = document.getElementById('welcomeOverlay');
   const tags = document.querySelectorAll('#welcomeFeatures .welcome-feature');
@@ -6491,7 +6533,6 @@ const COLD_OPEN_WARP_MS = 5250;       // was 4200
 const INTRO_TITLE_DELAY_MS = 500;     // let the fullscreen view settle first
 const INTRO_TITLE_FADE_MS = 900;
 const INTRO_TITLE_HOLD_MS = 2650;     // fully visible for this long before fading back out
-const CHART_FADE_MS = 900;
 const RESIZE_PAUSE_MS = 625;          // was 500
 const CONSOLE_RESIZE_MS = 1000;       // matches the .console CSS transition duration, was 800
 // Once the warp lands on "now," the camera settles into a lower, closer
@@ -6504,6 +6545,13 @@ const INTRO_CAM_PITCH = 0.95;         // default resting pitch is 0.5; higher pi
 const INTRO_CAM_ZOOM = 1.4;
 const INTRO_CAM_MOVE_MS = 1100;
 const INTRO_CAM_HOLD_MS = 500;        // brief hold on the settled angle before cutting to the chart
+// The small corner chart preview appears right as the title clears, so it's
+// already been visibly ticking through the tail of the warp by the time the
+// camera settles and it grows to full size — not something that only
+// materializes at the very end. See .chart-intro-preview / introChartPreviewOn.
+const INTRO_CHART_PREVIEW_DELAY_MS = INTRO_TITLE_DELAY_MS + INTRO_TITLE_FADE_MS + INTRO_TITLE_HOLD_MS;
+const INTRO_CHART_PREVIEW_FADE_MS = 500;
+const CHART_GROW_MS = 1100;           // matches .chartview's box-size transition duration above
 function playColdOpen(){
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
     showView('chart');
@@ -6519,17 +6567,30 @@ function playColdOpen(){
   setTimeout(()=> titleEl.classList.add('show'), INTRO_TITLE_DELAY_MS);
   setTimeout(()=> titleEl.classList.remove('show'), INTRO_TITLE_DELAY_MS + INTRO_TITLE_FADE_MS + INTRO_TITLE_HOLD_MS);
 
+  setTimeout(()=>{
+    introChartPreviewOn = true; // tick() starts actually rendering the wheel now
+    els.chartview.classList.add('chart-intro-preview');
+    fadeInEl(els.chartview, INTRO_CHART_PREVIEW_FADE_MS);
+  }, INTRO_CHART_PREVIEW_DELAY_MS);
+
   function revealChart(){
-    els.chartview.style.opacity = '0'; // set before showView flips display:none -> block, so there's something to fade from
-    showView('chart'); // same transition the CAST CHART nav button uses
-    setTimeout(()=> fadeInEl(els.chartview, CHART_FADE_MS), 200);
-    // a brief beat on the freshly-cast, now-live chart before the console
+    // real view-switch (nav highlight, geolocation request, house rotation)
+    // — activeView is still 'orbit' at this point, so this runs fully rather
+    // than early-returning the way it would if activeView had already been
+    // flipped to 'chart' when the preview first appeared
+    showView('chart');
+    els.chartview.classList.remove('chart-intro-preview'); // box eases from the corner back to full size
+    introChartPreviewOn = false; // activeView==='chart' (just set by showView) covers rendering from here
+    // no separate canvas refit needed for the grow itself — renderWheel calls
+    // fitCanvas() every frame it draws, so the bitmap already tracks the
+    // live CSS box size continuously through the whole transition
+    // a brief beat on the now full-size, still-live chart before the console
     // resizes back down and its chrome (then the CTA buttons) fade in
     setTimeout(()=>{
       document.body.classList.remove('intro-cold-open');
       setTimeout(fitCrt, CONSOLE_RESIZE_MS + 60); // after the CSS resize transition settles
       setTimeout(showOpeningCTAs, CONSOLE_RESIZE_MS + 100);
-    }, 200 + CHART_FADE_MS + RESIZE_PAUSE_MS);
+    }, CHART_GROW_MS + RESIZE_PAUSE_MS);
   }
 
   goToDate(new Date(), true, COLD_OPEN_WARP_MS, ()=>{
